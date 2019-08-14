@@ -21,7 +21,7 @@ import edu.wpi.first.wpilibj.GenericHID.Hand;
 // Import Talon and gyro libraries
 import com.ctre.phoenix.motorcontrol.can.WPI_TalonSRX;
 import com.analog.adis16470.frc.ADIS16470_IMU;
-
+import com.ctre.phoenix.motorcontrol.can.WPI_VictorSPX;
 
 /**
  * The VM is configured to automatically run this class, and to call the
@@ -42,7 +42,27 @@ public class Robot extends TimedRobot {
   public WPI_TalonSRX RightFront;
   public WPI_TalonSRX LeftBack;
   public WPI_TalonSRX RightBack;
-  public XboxController xcontroller;
+  public WPI_VictorSPX DorsalMotor1;
+  public WPI_TalonSRX DorsalMotor2;
+  public WPI_VictorSPX FourBarMotor1;
+  public WPI_VictorSPX FourBarMotor2;
+  public WPI_TalonSRX CargoIntakeMotor;
+
+  //Define Limit Switches/
+  DigitalInput forwardLimitSwitch, reverseLimitSwitch;
+  public DigitalInput DorsalLimitUp;
+  public DigitalInput DorsalLimitDown;
+  public DigitalInput FourBarFwd;
+  public DigitalInput FourBarBack;
+  public DigitalInput StarburstLimitOpen;
+  public DigitalInput StarburstLimitClose;
+  public DigitalInput CargoSensor;
+
+  //Define Pot/
+  //public AnalogInput DorsalPot;
+  //public AnalogInput FourBarPot;
+  public XboxController xcontroller1;
+  public XboxController xcontroller2;
   public static final ADIS16470_IMU imu = new ADIS16470_IMU();
   
   //Define camera variables
@@ -59,12 +79,27 @@ public class Robot extends TimedRobot {
     m_chooser.setDefaultOption("Default Auto", kDefaultAuto);
     m_chooser.addOption("My Auto", kCustomAuto);
     SmartDashboard.putData("Auto choices", m_chooser);
-    LeftFront = new WPI_TalonSRX(2);
-    RightFront = new WPI_TalonSRX(3);
-    LeftBack = new WPI_TalonSRX(0);
-    RightBack = new WPI_TalonSRX(1);
+    LeftFront = new WPI_TalonSRX(11);
+    RightFront = new WPI_TalonSRX(13);
+    LeftBack = new WPI_TalonSRX(10);
+    RightBack = new WPI_TalonSRX(12);
+    DorsalMotor1 = new WPI_VictorSPX(16);
+    DorsalMotor2 = new WPI_TalonSRX(32);
+    FourBarMotor1 = new WPI_VictorSPX(15);
+    FourBarMotor2 = new WPI_VictorSPX(14);
+    CargoIntakeMotor = new WPI_TalonSRX(17);
     RobotDT = new MecanumDrive(LeftFront, LeftBack, RightFront, RightBack);
-    xcontroller = new XboxController(0);
+    forwardLimitSwitch = new DigitalInput(0);
+    reverseLimitSwitch = new DigitalInput(1);
+    FourBarFwd = new DigitalInput(2);
+    FourBarBack = new DigitalInput(3);
+    StarburstLimitOpen = new DigitalInput(5);
+    StarburstLimitClose = new DigitalInput(6);
+    CargoSensor = new DigitalInput(4);
+    //mPotentiometer = new AnalogPotentiometer(1);
+
+    xcontroller1 = new XboxController(0);
+    xcontroller2 = new XboxController(1);
     RoboCam = CameraServer.getInstance();
     
     FrontCamera = RoboCam.startAutomaticCapture(0);
@@ -123,13 +158,13 @@ public class Robot extends TimedRobot {
    */
   @Override
   public void teleopPeriodic() {
-    double x = xcontroller.getX(Hand.kLeft);
-    double y = xcontroller.getTriggerAxis(Hand.kRight) - xcontroller.getTriggerAxis(Hand.kLeft);
-    double z = xcontroller.getX(Hand.kRight);
+    double x = xcontroller1.getX(Hand.kLeft);
+    double y = xcontroller1.getTriggerAxis(Hand.kRight) - xcontroller1.getTriggerAxis(Hand.kLeft);
+    double z = xcontroller1.getX(Hand.kRight);
     double yaw = imu.getAngleZ();
 
     // After you spin joystick R3 press A button to reset gyro angle
-    if (xcontroller.getAButtonPressed()) {
+    if (xcontroller1.getAButtonPressed()) {
       imu.reset();
 
   }
