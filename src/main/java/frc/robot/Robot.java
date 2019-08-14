@@ -16,12 +16,23 @@ import edu.wpi.cscore.UsbCamera;
 import edu.wpi.first.cameraserver.CameraServer;
 import edu.wpi.first.wpilibj.DigitalInput;
 import edu.wpi.first.wpilibj.DriverStation;
+
+//What does this mean????/
 import edu.wpi.first.wpilibj.GenericHID.Hand;
+
+//Import AnalogPotentiometer/
+import edu.wpi.first.wpilibj.AnalogPotentiometer;
+
+//Import Relay for Cargo Light/
+import edu.wpi.first.wpilibj.Relay;
 
 // Import Talon and gyro libraries
 import com.ctre.phoenix.motorcontrol.can.WPI_TalonSRX;
 import com.analog.adis16470.frc.ADIS16470_IMU;
 import com.ctre.phoenix.motorcontrol.can.WPI_VictorSPX;
+
+//Import Library for Star Burst Motor/
+import edu.wpi.first.wpilibj.VictorSP;
 
 /**
  * The VM is configured to automatically run this class, and to call the
@@ -42,28 +53,33 @@ public class Robot extends TimedRobot {
   public WPI_TalonSRX RightFront;
   public WPI_TalonSRX LeftBack;
   public WPI_TalonSRX RightBack;
+  
+  //Define IMU for Robot Centric Drive/
+  public static final ADIS16470_IMU imu = new ADIS16470_IMU();
+  
+  //Define Motors for GPM/
   public WPI_VictorSPX DorsalMotor1;
   public WPI_TalonSRX DorsalMotor2;
   public WPI_VictorSPX FourBarMotor1;
   public WPI_VictorSPX FourBarMotor2;
+  public VictorSP StarBurstMotor;
   public WPI_TalonSRX CargoIntakeMotor;
 
-  //Define Limit Switches/
-  DigitalInput forwardLimitSwitch, reverseLimitSwitch;
-  public DigitalInput DorsalLimitUp;
-  public DigitalInput DorsalLimitDown;
-  public DigitalInput FourBarFwd;
-  public DigitalInput FourBarBack;
-  public DigitalInput StarburstLimitOpen;
-  public DigitalInput StarburstLimitClose;
+  //Define Limit Switches for GPM/
+  public DigitalInput DorsalLimitUp, DorsalLimitDown;
+  public DigitalInput FourBarFwd, FourBarBack;
+  public DigitalInput StarburstLimitOpen, StarburstLimitClose;
   public DigitalInput CargoSensor;
 
   //Define Pot/
-  //public AnalogInput DorsalPot;
-  //public AnalogInput FourBarPot;
+  public AnalogPotentiometer DorsalPot, FourBarPot;
+  
+  //Define Xbox Joystick/
   public XboxController xcontroller1;
   public XboxController xcontroller2;
-  public static final ADIS16470_IMU imu = new ADIS16470_IMU();
+  
+   //Define Relay/
+  public Relay CargoLight;
   
   //Define camera variables
   public CameraServer RoboCam;
@@ -79,29 +95,43 @@ public class Robot extends TimedRobot {
     m_chooser.setDefaultOption("Default Auto", kDefaultAuto);
     m_chooser.addOption("My Auto", kCustomAuto);
     SmartDashboard.putData("Auto choices", m_chooser);
+    
+    //Initialize Drive Train Motors/
     LeftFront = new WPI_TalonSRX(11);
     RightFront = new WPI_TalonSRX(13);
     LeftBack = new WPI_TalonSRX(10);
     RightBack = new WPI_TalonSRX(12);
+    
+    //Initialize Motors for GPM/
     DorsalMotor1 = new WPI_VictorSPX(16);
     DorsalMotor2 = new WPI_TalonSRX(32);
     FourBarMotor1 = new WPI_VictorSPX(15);
     FourBarMotor2 = new WPI_VictorSPX(14);
     CargoIntakeMotor = new WPI_TalonSRX(17);
+    StarBurstMotor = new VictorSP(0);
     RobotDT = new MecanumDrive(LeftFront, LeftBack, RightFront, RightBack);
-    forwardLimitSwitch = new DigitalInput(0);
-    reverseLimitSwitch = new DigitalInput(1);
+    
+    //Initialize Limit Switches for GPM/
+    DorsalLimitUp = new DigitalInput(0);
+    DorsalLimitDown = new DigitalInput(1);
     FourBarFwd = new DigitalInput(2);
     FourBarBack = new DigitalInput(3);
     StarburstLimitOpen = new DigitalInput(5);
     StarburstLimitClose = new DigitalInput(6);
+    
+    //Initialize Cargo Components for GPM/
     CargoSensor = new DigitalInput(4);
-    //mPotentiometer = new AnalogPotentiometer(1);
-
+    CargoLight = new Relay(2, Relay.Direction.kForward);
+   //Initialize Potentiometers for GPM/
+    DorsalPot = new AnalogPotentiometer(0);
+    FourBarPot = new AnalogPotentiometer(1);
+    
+    //Initialize Xbox Controller or Joystick/
     xcontroller1 = new XboxController(0);
     xcontroller2 = new XboxController(1);
-    RoboCam = CameraServer.getInstance();
     
+    //Initialize Cameras/
+    RoboCam = CameraServer.getInstance();
     FrontCamera = RoboCam.startAutomaticCapture(0);
     BackCamera = RoboCam.startAutomaticCapture(1);
  
