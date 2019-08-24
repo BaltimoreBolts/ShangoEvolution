@@ -12,20 +12,22 @@ import edu.wpi.first.wpilibj.smartdashboard.SendableChooser;
 import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
 import edu.wpi.first.wpilibj.XboxController;
 import edu.wpi.first.wpilibj.drive.MecanumDrive;
+import edu.wpi.first.wpilibj.livewindow.LiveWindow;
 import edu.wpi.cscore.UsbCamera;
 import edu.wpi.first.cameraserver.CameraServer;
 import edu.wpi.first.wpilibj.DigitalInput;
 import edu.wpi.first.wpilibj.DriverStation;
 
-//What does this mean????/
+//Import Hand + Joystick control/
 import edu.wpi.first.wpilibj.GenericHID.Hand;
-
+import edu.wpi.first.wpilibj.Relay.Value;
 //Import AnalogPotentiometer/
 import edu.wpi.first.wpilibj.AnalogPotentiometer;
 
 //Import Relay for Cargo Light/
 import edu.wpi.first.wpilibj.Relay;
 
+import com.ctre.phoenix.motorcontrol.ControlMode;
 // Import Talon and gyro libraries
 import com.ctre.phoenix.motorcontrol.can.WPI_TalonSRX;
 import com.analog.adis16470.frc.ADIS16470_IMU;
@@ -57,34 +59,20 @@ public class Robot extends TimedRobot {
   //Define IMU for Robot Centric Drive/
   public static final ADIS16470_IMU imu = new ADIS16470_IMU();
   
-  //Define Motors for GPM/
-  public WPI_VictorSPX DorsalMotor1;
-  public WPI_TalonSRX DorsalMotor2;
-  public WPI_VictorSPX FourBarMotor1;
-  public WPI_VictorSPX FourBarMotor2;
-  public VictorSP StarBurstMotor;
-  public WPI_TalonSRX CargoIntakeMotor;
-
-  //Define Limit Switches for GPM/
-  public DigitalInput DorsalLimitUp, DorsalLimitDown;
-  public DigitalInput FourBarFwd, FourBarBack;
-  public DigitalInput StarburstLimitOpen, StarburstLimitClose;
-  public DigitalInput CargoSensor;
-
-  //Define Pot/
-  public AnalogPotentiometer DorsalPot, FourBarPot;
-  
   //Define Xbox Joystick/
   public XboxController xcontroller1;
   public XboxController xcontroller2;
   
-   //Define Relay/
+  //Define Relay/
   public Relay CargoLight;
   
   //Define camera variables
   public CameraServer RoboCam;
   public UsbCamera FrontCamera;
   public UsbCamera BackCamera;
+
+  //Define GPM/
+  private GPM mGPM;
 
   /**
    * This function is run when the robot is first started up and should be
@@ -101,30 +89,7 @@ public class Robot extends TimedRobot {
     RightFront = new WPI_TalonSRX(13);
     LeftBack = new WPI_TalonSRX(10);
     RightBack = new WPI_TalonSRX(12);
-    
-    //Initialize Motors for GPM/
-    DorsalMotor1 = new WPI_VictorSPX(16);
-    DorsalMotor2 = new WPI_TalonSRX(32);
-    FourBarMotor1 = new WPI_VictorSPX(15);
-    FourBarMotor2 = new WPI_VictorSPX(14);
-    CargoIntakeMotor = new WPI_TalonSRX(17);
-    StarBurstMotor = new VictorSP(0);
     RobotDT = new MecanumDrive(LeftFront, LeftBack, RightFront, RightBack);
-    
-    //Initialize Limit Switches for GPM/
-    DorsalLimitUp = new DigitalInput(0);
-    DorsalLimitDown = new DigitalInput(1);
-    FourBarFwd = new DigitalInput(2);
-    FourBarBack = new DigitalInput(3);
-    StarburstLimitOpen = new DigitalInput(5);
-    StarburstLimitClose = new DigitalInput(6);
-    
-    //Initialize Cargo Components for GPM/
-    CargoSensor = new DigitalInput(4);
-    CargoLight = new Relay(2, Relay.Direction.kForward);
-   //Initialize Potentiometers for GPM/
-    DorsalPot = new AnalogPotentiometer(0);
-    FourBarPot = new AnalogPotentiometer(1);
     
     //Initialize Xbox Controller or Joystick/
     xcontroller1 = new XboxController(0);
@@ -134,6 +99,9 @@ public class Robot extends TimedRobot {
     RoboCam = CameraServer.getInstance();
     FrontCamera = RoboCam.startAutomaticCapture(0);
     BackCamera = RoboCam.startAutomaticCapture(1);
+
+    //GPM Init/
+    mGPM = new GPM();
  
   }
 
@@ -147,6 +115,15 @@ public class Robot extends TimedRobot {
    */
   @Override
   public void robotPeriodic() {
+
+    boolean c = mGPM.haveCargo();
+    
+    // Need signal due to distance for assurance that cargo is obtained/
+    if (c) {
+      CargoLight.set(Value.kOn);
+    } else{
+      CargoLight.set(Value.kOff);
+    }
   }
 
   /**
@@ -188,23 +165,49 @@ public class Robot extends TimedRobot {
    */
   @Override
   public void teleopPeriodic() {
-    double x = xcontroller1.getX(Hand.kLeft);
-    double y = xcontroller1.getTriggerAxis(Hand.kRight) - xcontroller1.getTriggerAxis(Hand.kLeft);
-    double z = xcontroller1.getX(Hand.kRight);
+    double x = xcontroller2.getX(Hand.kLeft);
+    //double y = xcontroller1.getTriggerAxis(Hand.kRight) - xcontroller1.getTriggerAxis(Hand.kLeft);
+   // For testing just use left joystick. Use trigger axis code for GTA Drive/
+    double y = -xcontroller2.getY(Hand.kLeft);
+    double z = xcontroller2.getX(Hand.kRight);
     double yaw = imu.getAngleZ();
+    RobotDT.driveCartesian(x, y, 0, 0);
+ 
 
     // After you spin joystick R3 press A button to reset gyro angle
     if (xcontroller1.getAButtonPressed()) {
       imu.reset();
+  }
+    
+  if (xcontroller2.getBButtonPressed()){
+       mGPM.goSpongeHatch();
+  }
 
-  }
+  if (xcontroller2.getXButtonPressed()){
+      mGPM.goPineHome();
    
-   RobotDT.driveCartesian(x, y, z, 0);
+    }
+
+
+    /** 
+     * If Bumpers are pressed then Cargo Intake Motor = -1 for Intake  
+     *if Triggers are pressed set value to 1 for Outtake
+     *If triggers are released set value to 0*/
+    if(xcontroller2.getBumperPressed(Hand.kLeft) && xcontroller2.getBumperPressed(Hand.kRight)) {
+    mGPM.setCargoMotor(-1);
+    } else if((xcontroller2.getTriggerAxis(Hand.kLeft) >0.75) && (xcontroller2.getTriggerAxis(Hand.kRight) >0.75)) {
+      mGPM.setCargoMotor(1);
+    } else{
+    mGPM.setCargoMotor(0);
+    }
   }
+    
   /**
    * This function is called periodically during test mode.
    */
   @Override
   public void testPeriodic() {
+
+    LiveWindow.updateValues();
   }
 }
